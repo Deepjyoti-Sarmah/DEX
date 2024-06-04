@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addAssetLiquidity, buyAsset, giveQuote, sellAsset } from "../controllers/asset.controllers";
+import { addAssetLiquidity, buyAsset, giveQuote, sellAsset } from "../controllers/assets.controllers";
 
 
 const router = Router();

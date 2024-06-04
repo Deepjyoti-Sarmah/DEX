@@ -51,7 +51,7 @@ const sellAsset = (req: any, res: any) => {
     const {quantity} = req.body;
     const ethReserve = ETH_BALANCE;
     const usdcReserve = USDC_BALANCE;
-    
+
     const gottenUsdc = (usdcReserve * quantity) / (ethReserve + quantity);
     const newEthReserve = ethReserve + quantity;
     const newUsdcReserve = usdcReserve - gottenUsdc; 
