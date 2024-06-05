@@ -18,7 +18,7 @@ model User {
 
 model Asset {
   id     Int      @id @default(autoincrement())
-  userId Int
+  userId Int      @unique
   user   User     @relation(fields: [userId], references: [id])
   eth    Decimal? @default(0.0)
   usdc   Decimal? @default(0.0)
