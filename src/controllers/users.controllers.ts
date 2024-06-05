@@ -5,6 +5,8 @@ import { ApiResponse } from "../utils/ApiResponse";
 import { hashPassword, isPasswordCorrect } from "../utils/Password";
 import { generateAccessToken, generateRefreshToken } from "../utils/Jwt";
 import { RequestResponseHandler } from "../interfaces/requestResponses.interfaces";
+import { AuthenticatedRequest } from "../interfaces/auths.interfaces";
+import { AssetZod } from "../zod/asset.zod";
 
 const prisma = new PrismaClient();
 
@@ -118,8 +120,48 @@ const loginUser: RequestResponseHandler = async (req, res) => {
     }
 };
 
-const addAssetUser: RequestResponseHandler = async(req, res) => {
+const addAssetUser: RequestResponseHandler = async(req: AuthenticatedRequest, res) => {
+    const user = req.user;
+    const validateAsset = await AssetZod.parseAsync(req.body);
+    const {eth, usdc} = validateAsset;
 
+    if (!(eth || usdc)) {
+        throw new ApiError(400,"please provide at least one asset (ETH or USDC)");
+    }
+
+    try {
+        const existingAsset = await prisma.asset.findUnique({
+            where: {userId: user?.id}
+        });
+
+        if (existingAsset) {
+            const updateAsset = await prisma.asset.update({
+                where: {id: existingAsset.id},
+                data: {
+                    eth: Number(existingAsset.eth) + eth,
+                    usdc: Number(existingAsset.usdc) + usdc
+                }
+            });
+
+            return res.status(200).json(
+                new ApiResponse(200, updateAsset, "asset updated successfully")
+            );
+        } else {
+            const newAsset = await prisma.asset.create({
+                data: {
+                    userId: user?.id!,
+                    eth: eth,
+                    usdc: usdc
+                },
+            });
+
+            return res.status(201).json(
+                new ApiResponse(201, newAsset, "asset created successfully")
+            );
+        }
+    } catch (error) {
+        return new ApiError(500, "something went wrong while adding asset");
+    }
 };
 
 export { signupUser, loginUser, addAssetUser };
