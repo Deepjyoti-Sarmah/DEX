@@ -64,7 +64,6 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
     }
 }
 
-
 const buyAsset: RequestResponseHandler = async (req: AuthenticatedRequest, res) => {
     const validateQuantity = await AssetZod.parseAsync(req.body);
     const {quantity} = validateQuantity;
@@ -118,41 +117,92 @@ const buyAsset: RequestResponseHandler = async (req: AuthenticatedRequest, res) 
     }
 }
 
-const sellAsset: RequestResponseHandler = async(req, res) => {
-    const {quantity} = req.body;
+const sellAsset: RequestResponseHandler = async(req: AuthenticatedRequest, res) => {
+    const validateQuantity = await AssetZod.parseAsync(req.body);
+    const {quantity} = validateQuantity;
+    const user = req.user;
+
+    if (typeof quantity === "undefined") {
+        throw new ApiError(400, "quantity is required");
+    }
+
+    if (quantity <= 0) {
+        throw new ApiError(400, "quantity must be greater than zero");
+    }
+
     const ethReserve = ETH_BALANCE;
     const usdcReserve = USDC_BALANCE;
 
-    const gottenUsdc = (usdcReserve * quantity) / (ethReserve + quantity);
-    const newEthReserve = ethReserve + quantity;
-    const newUsdcReserve = usdcReserve - gottenUsdc; 
+    try {
+        const userAsset = await prisma.asset.findUnique({
+            where: {userId: user?.id}
+        });
 
-    ETH_BALANCE = newEthReserve;
-    USDC_BALANCE = newUsdcReserve;
+        if (!userAsset) {
+            throw new ApiError(404, "user asset not found");
+        }
 
-    res.json({
-        message: `You received ${gottenUsdc} USDC for ${quantity} ETH`
-    });
+        const gottenUsdc = (usdcReserve * quantity) / (ethReserve + quantity);
+
+        if ( Number(userAsset.eth) < quantity) {
+            throw new ApiError(400, "insufficient ETH  balance");
+        }
+
+        await prisma.asset.update({
+            where: {userId: user?.id},
+            data: {
+                eth: {decrement: quantity},
+                usdc: {increment: gottenUsdc},
+            },
+        });
+
+        const newEthReserve = ethReserve + quantity;
+        const newUsdcReserve = usdcReserve - gottenUsdc; 
+
+        ETH_BALANCE = newEthReserve;
+        USDC_BALANCE = newUsdcReserve;
+
+        return res.status(200).json(
+            new ApiResponse(200, `You received ${gottenUsdc} USDC for ${quantity} ETH`)
+        );
+    } catch (error) {
+        throw new ApiError(500, "error while buying asset (USDC)");
+    }
 }
 
 const giveQuote: RequestResponseHandler = async(req, res) => {
-    const {side, quantity} = req.body;
+    const validateAsset = await AssetZod.parseAsync(req.body);
+    const {side, quantity} = validateAsset;
+
+    if (typeof quantity === "undefined") {
+        throw new ApiError(400, "quantity is required");
+    }
+
+    if (quantity <= 0) {
+        throw new ApiError(400, "quantity must be greater than zero");
+    }
+
     const ethReserve = ETH_BALANCE;
     const usdcReserve = USDC_BALANCE;
 
+    let quote;
+    let message;
+
     if (side === "buy") {
         const usdcRequired = (usdcReserve * quantity) / (ethReserve - quantity);
-        res.json({
-            quote: usdcRequired,
-            message: `To buy ${quantity} ETH, you need ${usdcRequired} USDC`
-        });
+        quote = usdcRequired;
+        message = `To buy ${quantity} ETH, you need ${usdcRequired} USDC`;
     } else if (side === "sell") {
         const usdcToReceive = (usdcReserve * quantity) / (ethReserve + quantity);
-        res.json({
-            quote: usdcToReceive,
-            message: `For selling ${quantity} ETH, you will receive ${usdcToReceive}`
-        });
+        quote = usdcToReceive;
+        message = `For selling ${quantity} ETH, you will receive ${usdcToReceive}`;
+    } else {
+        throw new ApiError(400, "invalid side. Must be 'buy' or 'sell'");
     }
+
+    return res.status(200).json(
+        new ApiResponse(200, {quote, message}, "quotation of the asked quantity")
+    );
 }
 
 export {

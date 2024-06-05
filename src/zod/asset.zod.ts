@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const SideEnum = z.enum(["ask", "bid"]);
+const SideEnum = z.enum(["buy", "sell"]);
 
 const AssetZod = z.object({
     eth: z.number().min(0),
