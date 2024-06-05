@@ -1,14 +1,10 @@
-import { Response, Request, NextFunction } from "express";
 import { UserZod } from "../zod/user.zod";
 import { ApiError } from "../utils/ApiError";
 import { PrismaClient } from "@prisma/client";
 import { ApiResponse } from "../utils/ApiResponse";
 import { hashPassword, isPasswordCorrect } from "../utils/Password";
 import { generateAccessToken, generateRefreshToken } from "../utils/Jwt";
-
-interface RequestResponseHandler {
-    (req: Request, res: Response, next: NextFunction): Promise<any>;
-}
+import { RequestResponseHandler } from "../interfaces/requestResponses.interfaces";
 
 const prisma = new PrismaClient();
 
@@ -122,6 +118,8 @@ const loginUser: RequestResponseHandler = async (req, res) => {
     }
 };
 
-const addAssetUser = (req: any, res: any) => {};
+const addAssetUser: RequestResponseHandler = async(req, res) => {
+
+};
 
 export { signupUser, loginUser, addAssetUser };

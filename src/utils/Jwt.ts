@@ -1,4 +1,5 @@
 import  jwt  from "jsonwebtoken";
+import { ApiError } from "./ApiError";
 
 interface TokenPayload {
     userId: number;
@@ -8,17 +9,17 @@ interface TokenPayload {
 
 const generateAccessToken = (payload: TokenPayload): string => {
     if (!process.env.ACCESS_TOKEN_SECRET) {
-        throw new Error("ACCESS_TOKEN_SECRET is not defined");
+        throw new ApiError(500, "access_token_secret is not defined");
     }
 
-    return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+    return jwt.sign({id: payload.userId, ...payload}, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: process.env.ACCESS_TOKEN_SECRET,
     });
 }
 
 const generateRefreshToken = (userId: number): string => {
     if (!process.env.REFRESH_TOKEN_SECRET) {
-        throw new Error("REFRESH_TOKEN_SECRET is not defined");
+        throw new ApiError(500,"REFRESH_TOKEN_SECRET is not defined");
     }
 
     return jwt.sign({userId}, process.env.REFRESH_TOKEN_SECRET, {
