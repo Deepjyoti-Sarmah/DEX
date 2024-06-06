@@ -35,8 +35,8 @@ const generateAccessAndRefreshToken = async (userId: number) => {
         });
 
         return { accessToken, refreshToken}
-    } catch (error) {
-        throw new ApiError(500, "something went wrong while generating access and refresh token");
+    } catch (error: any) {
+        throw new ApiError(500, "something went wrong while generating access and refresh token", [error.message]);
     }
 }
 
@@ -72,8 +72,8 @@ const signupUser: RequestResponseHandler = async (req, res) => {
         return res
             .status(200)
             .json(new ApiResponse(200, user, "User registered successfully"));
-    } catch (error) {
-        throw new ApiError(500, "something went wrong while registering users");
+    } catch (error: any) {
+        throw new ApiError(500, "something went wrong while registering users", [error.message]);
     }
 };
 
@@ -115,8 +115,8 @@ const loginUser: RequestResponseHandler = async (req, res) => {
             .json(
                 new ApiResponse(200, {accessToken, refreshToken}, "user logged in successfully")
             );
-    } catch (error) {
-        return new ApiError(500, "something went worng while logging user");
+    } catch (error: any) {
+        return new ApiError(500, "something went worng while logging user", [error.message]);
     }
 };
 
@@ -159,8 +159,8 @@ const addAssetUser: RequestResponseHandler = async(req: AuthenticatedRequest, re
                 new ApiResponse(201, newAsset, "asset created successfully")
             );
         }
-    } catch (error) {
-        return new ApiError(500, "something went wrong while adding asset");
+    } catch (error: any) {
+        return new ApiError(500, "something went wrong while adding asset", [error.message]);
     }
 };
 
