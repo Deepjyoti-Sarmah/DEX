@@ -4,6 +4,7 @@ import { RequestResponseHandler } from "../interfaces/requestResponses.interface
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { AssetZod } from "../zod/asset.zod";
+import { QuantitySide } from "../zod/quantity.side.zod";
 
 const prisma = new PrismaClient();
 
@@ -65,7 +66,7 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
 }
 
 const buyAsset: RequestResponseHandler = async (req: AuthenticatedRequest, res) => {
-    const validateQuantity = await AssetZod.parseAsync(req.body);
+    const validateQuantity = await QuantitySide.parseAsync(req.body);
     const {quantity} = validateQuantity;
     const user = req.user;
 
@@ -118,7 +119,7 @@ const buyAsset: RequestResponseHandler = async (req: AuthenticatedRequest, res) 
 }
 
 const sellAsset: RequestResponseHandler = async(req: AuthenticatedRequest, res) => {
-    const validateQuantity = await AssetZod.parseAsync(req.body);
+    const validateQuantity = await QuantitySide.parseAsync(req.body);
     const {quantity} = validateQuantity;
     const user = req.user;
 
@@ -171,7 +172,7 @@ const sellAsset: RequestResponseHandler = async(req: AuthenticatedRequest, res) 
 }
 
 const giveQuote: RequestResponseHandler = async(req, res) => {
-    const validateAsset = await AssetZod.parseAsync(req.body);
+    const validateAsset = await QuantitySide.parseAsync(req.body);
     const {side, quantity} = validateAsset;
 
     if (typeof quantity === "undefined") {
