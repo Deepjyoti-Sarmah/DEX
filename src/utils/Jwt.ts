@@ -7,23 +7,23 @@ interface TokenPayload {
     email: string;
 }
 
-const generateAccessToken = (payload: TokenPayload): string => {
+const generateAccessToken = async (payload: TokenPayload): Promise<string> => {
     if (!process.env.ACCESS_TOKEN_SECRET) {
         throw new ApiError(500, "access_token_secret is not defined");
     }
 
     return jwt.sign({id: payload.userId, ...payload}, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: process.env.ACCESS_TOKEN_SECRET,
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     });
 }
 
-const generateRefreshToken = (userId: number): string => {
+const generateRefreshToken = async (userId: number): Promise<string> => {
     if (!process.env.REFRESH_TOKEN_SECRET) {
         throw new ApiError(500,"REFRESH_TOKEN_SECRET is not defined");
     }
 
     return jwt.sign({userId}, process.env.REFRESH_TOKEN_SECRET, {
-        expiresIn: process.env.REFRESH_TOKEN_SECRET,
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     });
 }
 

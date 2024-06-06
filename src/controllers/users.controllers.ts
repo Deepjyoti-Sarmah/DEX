@@ -15,17 +15,21 @@ const generateAccessAndRefreshToken = async (userId: number) => {
         const user = await prisma.user.findUnique({
             where: { id: userId}
         });
+
         if (!user) {
             throw new ApiError(404, "user not found");
         }
+        console.log(user)
 
-        const accessToken = generateAccessToken({
+        const accessToken = await generateAccessToken({
             userId: user.id,
             username: user.username,
             email: user.email
         });
 
-        const refreshToken = generateRefreshToken(user.id);
+        console.log("accessToken", accessToken)
+
+        const refreshToken = await generateRefreshToken(user.id);
 
         await prisma.user.update({
             where: {id: user.id},
@@ -33,6 +37,8 @@ const generateAccessAndRefreshToken = async (userId: number) => {
                 refreshToken: refreshToken,
             }
         });
+
+        console.log("refreshToken", refreshToken)
 
         return { accessToken, refreshToken}
     } catch (error: any) {
@@ -73,7 +79,9 @@ const signupUser: RequestResponseHandler = async (req, res) => {
             .status(200)
             .json(new ApiResponse(200, user, "User registered successfully"));
     } catch (error: any) {
-        throw new ApiError(500, "something went wrong while registering users", [error.message]);
+        return res.status(error.code || 500).json(
+            new ApiError(500, "something went wrong while registering users", [error.message])
+        );
     }
 };
 
@@ -116,7 +124,9 @@ const loginUser: RequestResponseHandler = async (req, res) => {
                 new ApiResponse(200, {accessToken, refreshToken}, "user logged in successfully")
             );
     } catch (error: any) {
-        return new ApiError(500, "something went worng while logging user", [error.message]);
+        return res.status(error.code || 500).json(
+            new ApiError(500, "something went worng while logging user", [error.message])
+        );
     }
 };
 
@@ -160,7 +170,9 @@ const addAssetUser: RequestResponseHandler = async(req: AuthenticatedRequest, re
             );
         }
     } catch (error: any) {
-        return new ApiError(500, "something went wrong while adding asset", [error.message]);
+        return res.status(error.code || 500).json( 
+            new ApiError(500, "something went wrong while adding asset", [error.message])
+        );
     }
 };
 

@@ -60,8 +60,10 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
         return res.status(200).json(
             new ApiResponse(200, `Updated ETH: ${ETH_BALANCE} and USDC: ${USDC_BALANCE}`)
         );
-    } catch (error) {
-        throw new ApiError(500, "error while addign asset to liquidity pool");
+    } catch (error: any) {
+        return res.status(error.code || 500).json(
+            new ApiError(500, "error while addign asset to liquidity pool", [error.message])
+        );
     }
 }
 
@@ -113,8 +115,10 @@ const buyAsset: RequestResponseHandler = async (req: AuthenticatedRequest, res) 
         return res.status(200).json(
             new ApiResponse(200,  `You paid ${paidAmount} USDC for ${quantity} ETH` )
         );
-    } catch (error) {
-        throw new ApiError(500, "error while buying asset (ETH)");
+    } catch (error: any) {
+        return res.status(error.code || 500).json(
+            new ApiError(500, "error while buying asset (ETH)", [error.message])
+        );
     }
 }
 
@@ -166,8 +170,10 @@ const sellAsset: RequestResponseHandler = async(req: AuthenticatedRequest, res) 
         return res.status(200).json(
             new ApiResponse(200, `You received ${gottenUsdc} USDC for ${quantity} ETH`)
         );
-    } catch (error) {
-        throw new ApiError(500, "error while buying asset (USDC)");
+    } catch (error: any) {
+        return res.status(error.code || 500).json(
+            new ApiError(500, "error while buying asset (USDC)", [error.message])
+        );
     }
 }
 
