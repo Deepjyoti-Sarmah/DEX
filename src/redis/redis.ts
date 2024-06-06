@@ -1,8 +1,10 @@
 import { Redis } from "ioredis";
+import { ApiError } from "../utils/ApiError";
 
-const redisHost = process.env.REDIS_HOST || 'localhost';
-const redisPort = process.env.REDIS_PORT || '6379'
+if (!process.env.REDIS_DATABASE_URL) {
+    throw new ApiError(500, "REDIS_DATABASE_URL not defined");
+}
 
-const redisClient = new Redis(`redis://${redisHost}:${redisPort}`);
+const redisClient = new Redis(process.env.REDIS_DATABASE_URL);
 
 export {redisClient}

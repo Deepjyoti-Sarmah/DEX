@@ -16,11 +16,14 @@ import { initRedis } from "./redis/initRedis";
 app.use("/api/v1/asset", assetroute);
 app.use("/api/v1/user", userroute);
 
+const port = process.env.PORT || 3001;
+console.log(port)
+
 const start = async () => {
     try {
         await initRedis();
-        app.listen(process.env.port, () => {
-            console.log(`server is running on port ${process.env.port}`)
+        app.listen(port, () => {
+            console.log(`server is running on port ${port}`)
         });
     } catch (error) {
         console.error("failed to start server:", error);
@@ -28,4 +31,3 @@ const start = async () => {
 }
 
 start();
-
