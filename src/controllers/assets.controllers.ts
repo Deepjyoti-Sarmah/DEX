@@ -13,45 +13,58 @@ let USDC_BALANCE = 700000;
 
 const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedRequest, res) => {
     const validateAsset = await AssetZod.parseAsync(req.body);
-    const {eth, usdc} = validateAsset;
+    const { eth, usdc } = validateAsset;
     const user = req.user;
+
+    if (eth === 0 || usdc === 0) {
+        throw new ApiError(400, "Please provide a non-zero value for either ETH or USDC");
+    }
 
     const ethReserve = ETH_BALANCE;
     const usdcReserve = USDC_BALANCE;
 
     try {
         const userAsset = await prisma.asset.findUnique({
-            where: {userId: user?.id},
+            where: { userId: user?.id },
         });
-        
+
+        console.log(userAsset);
+
         if (!userAsset) {
             throw new ApiError(404, "user asset not found");
         }
+
+        console.log(`User ETH: ${userAsset.eth}, Payload ETH: ${eth}`);
+        console.log(`User USDC: ${userAsset.usdc}, Payload USDC: ${usdc}`);
 
         if (Number(userAsset.eth) < eth || Number(userAsset.usdc) < usdc) {
             throw new ApiError(400, "insufficient balance to add to liquidity pool");
         }
 
-        await prisma.asset.update({
-            where: {userId: user?.id},
+        const updatedAsset = await prisma.asset.update({
+            where: { userId: user?.id },
             data: {
-                eth: {decrement: eth},
-                usdc: {decrement: usdc},
+                eth: { decrement: eth },
+                usdc: { decrement: usdc },
             }
         });
+        console.log(updatedAsset);
 
         if (ethReserve === 0 && usdcReserve === 0) {
             ETH_BALANCE = eth;
             USDC_BALANCE = usdc;
-        } else {
-            const ethRatio = eth / ethReserve;
-            const usdcRatio = usdc / usdcReserve;
+        } else if (ethReserve === 0 || usdcReserve === 0) {
+            ETH_BALANCE = ethReserve === 0 ? eth : ETH_BALANCE;
+            USDC_BALANCE = usdcReserve === 0 ? usdc : USDC_BALANCE;
+        } else if (ethReserve > 0 && usdcReserve > 0) {
+            // const ethRatio = eth / ethReserve;
+            // const usdcRatio = usdc / usdcReserve;
 
-            if (ethRatio !== usdcRatio) {
-                return res.status(400).json(
-                    new ApiError(400, "Incorrect liquidity ratio. Please provide equal ratio of ETH and USDC." )
-                );
-            }
+            // if (ethRatio !== usdcRatio) {
+            //     return res.status(400).json(
+            //         new ApiError(400, "Incorrect liquidity ratio. Please provide equal ratio of ETH and USDC.")
+            //     );
+            // }
 
             ETH_BALANCE += eth;
             USDC_BALANCE += usdc;
@@ -62,7 +75,7 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
         );
     } catch (error: any) {
         return res.status(error.code || 500).json(
-            new ApiError(500, "error while addign asset to liquidity pool", [error.message])
+            new ApiError(500, "error while adding asset to liquidity pool", [error.message])
         );
     }
 }
@@ -94,17 +107,21 @@ const buyAsset: RequestResponseHandler = async (req: AuthenticatedRequest, res) 
 
         const paidAmount = (usdcReserve * quantity) / (ethReserve - quantity);
 
+        console.log("paidAmount", paidAmount);
+
         if (Number(userAsset.usdc) < paidAmount) {
             throw new ApiError(400,"insufficient USDC balance");
         }
 
-        await prisma.asset.update({
+        const updatedAsset = await prisma.asset.update({
             where: {userId: user?.id},
             data: {
                 eth: {increment: quantity},
                 usdc: {decrement: paidAmount},
             },
         });
+
+        console.log(updatedAsset);
 
         const newEthReserve = ethReserve - quantity;
         const newUsdcReserve = usdcReserve + paidAmount;
@@ -149,17 +166,21 @@ const sellAsset: RequestResponseHandler = async(req: AuthenticatedRequest, res) 
 
         const gottenUsdc = (usdcReserve * quantity) / (ethReserve + quantity);
 
+        console.log("gottenUsdc", gottenUsdc)
+
         if ( Number(userAsset.eth) < quantity) {
             throw new ApiError(400, "insufficient ETH  balance");
         }
 
-        await prisma.asset.update({
+        const updatedAsset = await prisma.asset.update({
             where: {userId: user?.id},
             data: {
                 eth: {decrement: quantity},
                 usdc: {increment: gottenUsdc},
             },
         });
+
+        console.log("sell", updatedAsset)
 
         const newEthReserve = ethReserve + quantity;
         const newUsdcReserve = usdcReserve - gottenUsdc; 

@@ -10,8 +10,6 @@ const verifyJWT: RequestResponseHandler = async (req: AuthenticatedRequest, res,
     try {
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
 
-        console.log(token)
-
         if (!token) {
             throw new ApiError(401, "unauthorized request");
         }
@@ -22,8 +20,6 @@ const verifyJWT: RequestResponseHandler = async (req: AuthenticatedRequest, res,
 
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET) as {id: number}; 
 
-        console.log(decodedToken)
-
         const user = await prisma.user.findUnique({
             where: { id: decodedToken.id },
             select: {
@@ -33,8 +29,6 @@ const verifyJWT: RequestResponseHandler = async (req: AuthenticatedRequest, res,
                 assets: true
             }
         });
-
-        console.log(user);
 
         if (!user) {
             throw new ApiError(401, "invalid access token");

@@ -38,8 +38,6 @@ const generateAccessAndRefreshToken = async (userId: number) => {
             }
         });
 
-        console.log("refreshToken", refreshToken)
-
         return { accessToken, refreshToken}
     } catch (error: any) {
         throw new ApiError(500, "something went wrong while generating access and refresh token", [error.message]);
@@ -157,9 +155,14 @@ const addAssetUser: RequestResponseHandler = async(req: AuthenticatedRequest, re
                 new ApiResponse(200, updateAsset, "asset updated successfully")
             );
         } else {
+
+            if (user?.id === undefined) {
+                throw new ApiError(400, "userId is undefined");
+            }
+
             const newAsset = await prisma.asset.create({
                 data: {
-                    userId: user?.id!,
+                    userId: user?.id,
                     eth: eth,
                     usdc: usdc
                 },
