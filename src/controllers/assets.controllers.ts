@@ -16,7 +16,7 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
     const { eth, usdc } = validateAsset;
     const user = req.user;
 
-    if (eth === 0 || usdc === 0) {
+    if (!(eth > 0 && usdc > 0)) {
         throw new ApiError(400, "Please provide a non-zero value for either ETH or USDC");
     }
 
@@ -28,14 +28,9 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
             where: { userId: user?.id },
         });
 
-        console.log(userAsset);
-
         if (!userAsset) {
             throw new ApiError(404, "user asset not found");
         }
-
-        console.log(`User ETH: ${userAsset.eth}, Payload ETH: ${eth}`);
-        console.log(`User USDC: ${userAsset.usdc}, Payload USDC: ${usdc}`);
 
         if (Number(userAsset.eth) < eth || Number(userAsset.usdc) < usdc) {
             throw new ApiError(400, "insufficient balance to add to liquidity pool");
@@ -48,7 +43,6 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
                 usdc: { decrement: usdc },
             }
         });
-        console.log(updatedAsset);
 
         if (ethReserve === 0 && usdcReserve === 0) {
             ETH_BALANCE = eth;
