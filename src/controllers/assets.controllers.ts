@@ -5,11 +5,9 @@ import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { AssetZod } from "../zod/asset.zod";
 import { QuantitySide } from "../zod/quantity.side.zod";
+import { getBalances, updateBalances } from "../redis/liquidity";
 
 const prisma = new PrismaClient();
-
-let ETH_BALANCE =  200;
-let USDC_BALANCE = 700000;
 
 const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedRequest, res) => {
     const validateAsset = await AssetZod.parseAsync(req.body);
@@ -20,10 +18,12 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
         throw new ApiError(400, "Please provide a non-zero value for either ETH or USDC");
     }
 
-    const ethReserve = ETH_BALANCE;
-    const usdcReserve = USDC_BALANCE;
-
     try {
+
+        const {ETH_BALANCE, USDC_BALANCE}  = await getBalances();
+        const ethReserve = ETH_BALANCE;
+        const usdcReserve = USDC_BALANCE;
+
         const userAsset = await prisma.asset.findUnique({
             where: { userId: user?.id },
         });
@@ -45,11 +45,11 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
         });
 
         if (ethReserve === 0 && usdcReserve === 0) {
-            ETH_BALANCE = eth;
-            USDC_BALANCE = usdc;
+            await updateBalances(eth, usdc);
         } else if (ethReserve === 0 || usdcReserve === 0) {
-            ETH_BALANCE = ethReserve === 0 ? eth : ETH_BALANCE;
-            USDC_BALANCE = usdcReserve === 0 ? usdc : USDC_BALANCE;
+            const newEthBalance = ethReserve === 0 ? eth : ETH_BALANCE;
+            const newUsdcBalance = usdcReserve === 0 ? usdc : USDC_BALANCE;
+            await updateBalances(newEthBalance, newUsdcBalance);
         } else if (ethReserve > 0 && usdcReserve > 0) {
             // const ethRatio = eth / ethReserve;
             // const usdcRatio = usdc / usdcReserve;
@@ -59,9 +59,9 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
             //         new ApiError(400, "Incorrect liquidity ratio. Please provide equal ratio of ETH and USDC.")
             //     );
             // }
-
-            ETH_BALANCE += eth;
-            USDC_BALANCE += usdc;
+            const newEthBalance = ETH_BALANCE + eth;
+            const newUsdcBalance = USDC_BALANCE + usdc;
+            await updateBalances(newEthBalance, newUsdcBalance);
         }
 
         return res.status(200).json(
@@ -87,10 +87,12 @@ const buyAsset: RequestResponseHandler = async (req: AuthenticatedRequest, res) 
         throw new ApiError(400, "quantity must be greater than zero")
     }
 
-    const ethReserve = ETH_BALANCE;
-    const usdcReserve = USDC_BALANCE;
-
     try {
+
+        const {ETH_BALANCE, USDC_BALANCE} = await getBalances();
+        const ethReserve = ETH_BALANCE;
+        const usdcReserve = USDC_BALANCE;
+
         const userAsset = await prisma.asset.findUnique({
             where: {userId: user?.id},
         });
@@ -116,8 +118,7 @@ const buyAsset: RequestResponseHandler = async (req: AuthenticatedRequest, res) 
         const newEthReserve = ethReserve - quantity;
         const newUsdcReserve = usdcReserve + paidAmount;
 
-        ETH_BALANCE = newEthReserve;
-        USDC_BALANCE = newUsdcReserve;
+        await updateBalances(newEthReserve, newUsdcReserve);
 
         return res.status(200).json(
             new ApiResponse(200,  `You paid ${paidAmount} USDC for ${quantity} ETH` )
@@ -142,10 +143,11 @@ const sellAsset: RequestResponseHandler = async(req: AuthenticatedRequest, res) 
         throw new ApiError(400, "quantity must be greater than zero");
     }
 
-    const ethReserve = ETH_BALANCE;
-    const usdcReserve = USDC_BALANCE;
-
     try {
+        const {ETH_BALANCE, USDC_BALANCE} = await getBalances();
+        const ethReserve = ETH_BALANCE;
+        const usdcReserve = USDC_BALANCE;
+
         const userAsset = await prisma.asset.findUnique({
             where: {userId: user?.id}
         });
@@ -171,8 +173,7 @@ const sellAsset: RequestResponseHandler = async(req: AuthenticatedRequest, res) 
         const newEthReserve = ethReserve + quantity;
         const newUsdcReserve = usdcReserve - gottenUsdc; 
 
-        ETH_BALANCE = newEthReserve;
-        USDC_BALANCE = newUsdcReserve;
+        await updateBalances(newEthReserve, newUsdcReserve);
 
         return res.status(200).json(
             new ApiResponse(200, `You received ${gottenUsdc} USDC for ${quantity} ETH`)
@@ -196,6 +197,7 @@ const giveQuote: RequestResponseHandler = async(req, res) => {
         throw new ApiError(400, "quantity must be greater than zero");
     }
 
+    const {ETH_BALANCE, USDC_BALANCE} = await getBalances();
     const ethReserve = ETH_BALANCE;
     const usdcReserve = USDC_BALANCE;
 
