@@ -5,14 +5,27 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: process.env.cors_origin,
     credentials: true
 }));
 
-import assetRoute from "./routes/assets.routes";
-import userRoute from "./routes/users.routes";
+import assetroute from "./routes/assets.routes";
+import userroute from "./routes/users.routes";
+import { initRedis } from "./redis/initRedis";
 
-app.use("/api/v1/asset", assetRoute);
-app.use("/api/v1/user", userRoute);
+app.use("/api/v1/asset", assetroute);
+app.use("/api/v1/user", userroute);
 
-app.listen(3000);
+const start = async () => {
+    try {
+        await initRedis();
+        app.listen(process.env.port, () => {
+            console.log(`server is running on port ${process.env.port}`)
+        });
+    } catch (error) {
+        console.error("failed to start server:", error);
+    }
+}
+
+start();
+
