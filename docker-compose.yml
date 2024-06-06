@@ -26,7 +26,4 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pqdata:/var/lib/postgresql/data
-
-volumes:
-  pqdata: {}
+      - ./postgres-data:/var/lib/postgresql/data
