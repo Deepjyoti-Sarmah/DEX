@@ -19,15 +19,12 @@ const generateAccessAndRefreshToken = async (userId: number) => {
         if (!user) {
             throw new ApiError(404, "user not found");
         }
-        console.log(user)
 
         const accessToken = await generateAccessToken({
             userId: user.id,
             username: user.username,
             email: user.email
         });
-
-        console.log("accessToken", accessToken)
 
         const refreshToken = await generateRefreshToken(user.id);
 

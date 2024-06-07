@@ -17,7 +17,6 @@ app.use("/api/v1/asset", assetroute);
 app.use("/api/v1/user", userroute);
 
 const port = process.env.PORT || 3001;
-console.log(port)
 
 const start = async () => {
     try {
