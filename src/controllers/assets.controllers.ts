@@ -19,7 +19,6 @@ const addAssetLiquidity: RequestResponseHandler = async (req: AuthenticatedReque
     }
 
     try {
-
         const {ETH_BALANCE, USDC_BALANCE}  = await getBalances();
         const ethReserve = ETH_BALANCE;
         const usdcReserve = USDC_BALANCE;
@@ -221,9 +220,27 @@ const giveQuote: RequestResponseHandler = async(req, res) => {
     );
 }
 
+const getLiquidity: RequestResponseHandler = async(req, res) => {
+    try {
+        const {ETH_BALANCE, USDC_BALANCE} = await getBalances();
+
+        return res.status(200).json(
+            new ApiResponse( 200, { 
+                ethBalance:ETH_BALANCE, 
+                usdcBalace: USDC_BALANCE 
+            }, "Current liquidity")
+        );
+    } catch (error: any) {
+        return res.status(error.code || 500).json(
+            new ApiError(500, "something went wrong while fetching liquidity", [error.message])
+        );
+    }
+}
+
 export {
     addAssetLiquidity,
     buyAsset,
     sellAsset,
-    giveQuote
+    giveQuote,
+    getLiquidity
 }

@@ -176,4 +176,26 @@ const addAssetUser: RequestResponseHandler = async(req: AuthenticatedRequest, re
     }
 };
 
-export { signupUser, loginUser, addAssetUser };
+const getUserAsset: RequestResponseHandler = async(req: AuthenticatedRequest, res) => {
+    const user = req.user;
+
+    try {
+        const userAsset = await prisma.asset.findUnique({
+            where: {userId: user?.id}
+        });
+
+        if (!userAsset) {
+            throw new ApiError(404, "user's asset doesn't exists");
+        }
+
+        return res.status(200).json(
+            new ApiResponse(200, userAsset, "user's asset received successfully")
+        );
+    } catch (error: any) {
+        return res.status(error.code || 500).json(
+            new ApiError(500, "something went wrong while fetching user asset", [error.message])
+        );
+    }
+}
+
+export { signupUser, loginUser, addAssetUser, getUserAsset };
